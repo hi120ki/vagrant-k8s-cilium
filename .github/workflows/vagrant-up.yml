@@ -1,0 +1,28 @@
+name: vagrant-up
+
+on:
+  push:
+  schedule:
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+
+jobs:
+  vagrant-up:
+    runs-on: macos-10.15
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.x"
+          architecture: "x64"
+
+      - name: install ansible
+        run: pip install -U ansible
+
+      - name: Run vagrant up
+        run: vagrant up
+
+      - name: ssh into box after boot
+        run: vagrant ssh -c "echo 'hello world!'"
