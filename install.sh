@@ -97,7 +97,7 @@ echo "[+] coredns pending done"
 echo "[i] install cilium helm"
 helm repo add cilium https://helm.cilium.io/
 helm repo update
-helm install cilium cilium/cilium --version 1.12.3 --namespace kube-system
+helm install cilium cilium/cilium --version 1.12.5 --namespace kube-system --set operator.replicas=1
 
 echo "[i] install cilium cli"
 CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)
@@ -110,6 +110,10 @@ rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
 
 cilium status --wait
 
-cilium connectivity test
+echo "[i] taint node"
+kubectl taint node --all node-role.kubernetes.io/control-plane:NoSchedule-
+
+echo "[i] node info"
+kubectl get nodes -o wide
 
 echo "[+] All Done"
