@@ -116,4 +116,21 @@ kubectl taint node --all node-role.kubernetes.io/control-plane:NoSchedule-
 echo "[i] node info"
 kubectl get nodes -o wide
 
+echo "[i] enable hostpath provisioner"
+sudo snap install yq
+sudo cat /etc/kubernetes/manifests/kube-controller-manager.yaml | \
+  yq -e '.spec.containers[].command += ["--enable-hostpath-provisioner=true"]' | \
+  sudo tee /etc/kubernetes/manifests/kube-controller-manager.yaml
+
+echo "[i] add storageclass"
+cat <<EOF | kubectl apply -f -
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: standard
+  annotations:
+    storageclass.beta.kubernetes.io/is-default-class: "true"
+provisioner: kubernetes.io/host-path
+EOF
+
 echo "[+] All Done"
