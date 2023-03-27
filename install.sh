@@ -99,7 +99,7 @@ echo "[+] coredns pending done"
 echo "[i] install cilium helm"
 helm repo add cilium https://helm.cilium.io/
 helm repo update
-helm install cilium cilium/cilium --version 1.12.6 --namespace kube-system --set operator.replicas=1
+helm install cilium cilium/cilium --version 1.13.1 --namespace kube-system --set operator.replicas=1
 
 echo "[i] install cilium cli"
 CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)
