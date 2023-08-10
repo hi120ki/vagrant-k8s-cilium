@@ -1,6 +1,6 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/focal64"
-  config.vm.box_version = "20230523.0.0"
+  config.vm.box_version = "20230803.0.0"
 
   config.vm.network "private_network", ip: "192.168.56.210"
 
