@@ -11,10 +11,9 @@ fi
 sudo snap install yq
 
 echo "[i] install helm"
-cd ~
-curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
-chmod 700 get_helm.sh
-./get_helm.sh
+curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 /tmp/get_helm.sh
+/tmp/get_helm.sh
 
 echo "[i] add shell alias"
 # https://github.com/ahmetb/kubectl-aliases
