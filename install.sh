@@ -8,6 +8,8 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
+sudo snap install yq
+
 echo "[i] install helm"
 cd ~
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
@@ -24,6 +26,7 @@ if [ -f ~/.config/fish/config.fish ]; then
   echo 'test -f ~/.kubectl_aliases.fish && source ~/.kubectl_aliases.fish' >>~/.config/fish/config.fish
 fi
 
+# https://kubernetes.io/docs/setup/production-environment/container-runtimes/#install-and-configure-prerequisites
 echo "[i] network config"
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
@@ -40,12 +43,7 @@ net.ipv4.ip_forward                 = 1
 EOF
 
 sudo sysctl --system
-
-sudo apt-get update && sudo apt-get install -y iptables arptables ebtables
-sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
-sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
-sudo update-alternatives --set arptables /usr/sbin/arptables-legacy
-sudo update-alternatives --set ebtables /usr/sbin/ebtables-legacy
+sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
 
 echo "[i] install containerd"
 sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
@@ -56,7 +54,7 @@ sudo add-apt-repository \
     stable"
 sudo apt-get update && sudo apt-get install -y containerd.io
 sudo mkdir -p /etc/containerd
-containerd config default | sed -e "s/systemd_cgroup = false/systemd_cgroup = true/g" | sudo tee /etc/containerd/config.toml
+containerd config default | sed -e "s/SystemdCgroup = false/SystemdCgroup = true/g" | sudo tee /etc/containerd/config.toml
 sudo systemctl restart containerd
 
 echo "[i] install kubeadm"
@@ -106,7 +104,7 @@ echo "[i] install cilium cli"
 CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)
 CLI_ARCH=amd64
 if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
-curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+curl -s -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
 sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
 sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
 rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
