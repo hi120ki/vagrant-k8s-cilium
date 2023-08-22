@@ -14,5 +14,6 @@ Vagrant.configure("2") do |config|
   end
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
     bash -eu /vagrant/install.sh 192.168.56.210
+    cilium connectivity test
   SHELL
 end
