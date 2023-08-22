@@ -10,13 +10,14 @@ fi
 
 sudo snap install yq
 
+# https://github.com/helm/helm
 echo "[i] install helm"
 curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
 chmod 700 /tmp/get_helm.sh
 /tmp/get_helm.sh
 
-echo "[i] add shell alias"
 # https://github.com/ahmetb/kubectl-aliases
+echo "[i] add shell alias"
 curl -fsSL "https://raw.githubusercontent.com/ahmetb/kubectl-aliases/master/.kubectl_aliases" -o ~/.kubectl_aliases
 echo '[ -f ~/.kubectl_aliases ] && source ~/.kubectl_aliases' >>~/.bashrc
 echo 'function kubectl() { echo "+ kubectl $@">&2; command kubectl $@; }' >>~/.bashrc
@@ -31,19 +32,20 @@ cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
 EOF
-
 sudo modprobe overlay
 sudo modprobe br_netfilter
+lsmod | grep br_netfilter
+lsmod | grep overlay
 
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-iptables  = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward                 = 1
 EOF
-
 sudo sysctl --system
 sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
 
+# https://kubernetes.io/docs/setup/production-environment/container-runtimes/#containerd
 echo "[i] install containerd"
 sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
@@ -59,6 +61,7 @@ containerd config default |
   sudo tee /etc/containerd/config.toml
 sudo systemctl restart containerd
 
+# https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
 echo "[i] install kubeadm"
 sudo apt-get update && sudo apt-get install -y apt-transport-https curl
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
@@ -92,6 +95,8 @@ done
 sleep 3
 echo "[+] coredns pending done"
 
+# https://github.com/cilium/cilium
+# https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/
 echo "[i] install cilium helm"
 CILIUM_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium/master/stable.txt)
 helm repo add cilium https://helm.cilium.io/
