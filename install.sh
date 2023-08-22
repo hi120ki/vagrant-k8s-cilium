@@ -53,7 +53,10 @@ sudo add-apt-repository \
     stable"
 sudo apt-get update && sudo apt-get install -y containerd.io
 sudo mkdir -p /etc/containerd
-containerd config default | sed -e "s/SystemdCgroup = false/SystemdCgroup = true/g" | sudo tee /etc/containerd/config.toml
+containerd config default |
+  sed -e "s/SystemdCgroup = false/SystemdCgroup = true/g" |
+  sed -e "s/registry.k8s.io\/pause:3.6/registry.k8s.io\/pause:3.9/g" |
+  sudo tee /etc/containerd/config.toml
 sudo systemctl restart containerd
 
 echo "[i] install kubeadm"
@@ -65,9 +68,6 @@ EOF
 sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
-
-echo "[i] restart containerd"
-sudo systemctl restart containerd
 
 echo "[i] kubeadm init"
 sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --apiserver-advertise-address $1
