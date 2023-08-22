@@ -67,7 +67,6 @@ sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
 echo "[i] restart containerd"
-sudo rm /etc/containerd/config.toml
 sudo systemctl restart containerd
 
 echo "[i] kubeadm init"
