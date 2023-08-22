@@ -73,7 +73,10 @@ sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
 echo "[i] kubeadm init"
-sudo kubeadm init --pod-network-cidr=192.168.0.0/16 --apiserver-advertise-address $1
+sudo kubeadm init \
+  --skip-phases=addon/kube-proxy \
+  --pod-network-cidr=192.168.0.0/16 \
+  --apiserver-advertise-address $1
 
 mkdir -p $HOME/.kube
 sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
@@ -86,7 +89,7 @@ done
 
 c1=$(kubectl get pods -A | grep -c "Running") || true
 c2=$(kubectl get pods -A | grep -c "Pending") || true
-while [ $c1 -ne 5 ] || [ $c2 -ne 2 ]; do
+while [ $c1 -ne 4 ] || [ $c2 -ne 2 ]; do
   sleep 1
   echo "[i] waiting coredns pending"
   c1=$(kubectl get pods -A | grep -c "Running") || true
@@ -101,7 +104,13 @@ echo "[i] install cilium helm"
 CILIUM_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium/master/stable.txt)
 helm repo add cilium https://helm.cilium.io/
 helm repo update
-helm install cilium cilium/cilium --version ${CILIUM_VERSION} --namespace kube-system --set operator.replicas=1
+helm install cilium cilium/cilium \
+  --version ${CILIUM_VERSION} \
+  --namespace kube-system \
+  --set operator.replicas=1 \
+  --set kubeProxyReplacement=true \
+  --set k8sServiceHost=$1 \
+  --set k8sServicePort=6443
 
 echo "[i] install cilium cli"
 CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)
