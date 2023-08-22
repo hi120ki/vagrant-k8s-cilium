@@ -136,4 +136,7 @@ metadata:
 provisioner: kubernetes.io/host-path
 EOF
 
+echo "[i] show all pods"
+kubectl get pods --all-namespaces
+
 echo "[+] All Done"
