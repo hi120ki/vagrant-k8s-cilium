@@ -74,7 +74,6 @@ sudo apt-mark hold kubelet kubeadm kubectl
 
 echo "[i] kubeadm init"
 sudo kubeadm init \
-  --skip-phases=addon/kube-proxy \
   --pod-network-cidr=192.168.0.0/16 \
   --apiserver-advertise-address $1
 
@@ -107,10 +106,7 @@ helm repo update
 helm install cilium cilium/cilium \
   --version ${CILIUM_VERSION} \
   --namespace kube-system \
-  --set operator.replicas=1 \
-  --set kubeProxyReplacement=true \
-  --set k8sServiceHost=$1 \
-  --set k8sServicePort=6443
+  --set operator.replicas=1
 
 echo "[i] install cilium cli"
 CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)
@@ -128,13 +124,6 @@ kubectl taint node --all node-role.kubernetes.io/control-plane:NoSchedule-
 
 echo "[i] node info"
 kubectl get nodes -o wide
-
-echo "[i] check kube-controller-manager config"
-result=$(sudo cat /etc/kubernetes/manifests/kube-controller-manager.yaml | yq eval '.spec.containers[] | has("command")')
-if [ "$result" != "true" ]; then
-  echo "[-] kube-controller-manager config not found."
-  exit 1
-fi
 
 echo "[i] enable hostpath provisioner"
 sudo cat /etc/kubernetes/manifests/kube-controller-manager.yaml |
