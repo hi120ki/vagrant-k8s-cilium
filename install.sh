@@ -129,6 +129,13 @@ kubectl taint node --all node-role.kubernetes.io/control-plane:NoSchedule-
 echo "[i] node info"
 kubectl get nodes -o wide
 
+echo "[i] check kube-controller-manager config"
+result=$(sudo cat /etc/kubernetes/manifests/kube-controller-manager.yaml | yq eval '.spec.containers[] | has("command")')
+if [ "$result" != "true" ]; then
+  echo "[-] kube-controller-manager config not found."
+  exit 1
+fi
+
 echo "[i] enable hostpath provisioner"
 sudo cat /etc/kubernetes/manifests/kube-controller-manager.yaml |
   yq -e '.spec.containers[].command += ["--enable-hostpath-provisioner=true"]' |
