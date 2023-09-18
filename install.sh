@@ -126,6 +126,10 @@ echo "[i] node info"
 kubectl get nodes -o wide
 
 echo "[i] enable hostpath provisioner"
+if [ ! -e "/etc/kubernetes/manifests/kube-controller-manager.yaml" ]; then
+  echo "File does not exist: /etc/kubernetes/manifests/kube-controller-manager.yaml" 1>&2
+  exit 1
+fi
 sudo cat /etc/kubernetes/manifests/kube-controller-manager.yaml |
   yq -e '.spec.containers[].command += ["--enable-hostpath-provisioner=true"]' |
   sudo tee /etc/kubernetes/manifests/kube-controller-manager.yaml
