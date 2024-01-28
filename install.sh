@@ -47,14 +47,20 @@ sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables ne
 
 # https://kubernetes.io/docs/setup/production-environment/container-runtimes/#containerd
 echo "[i] install containerd"
-sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository \
-  "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) \
-    stable"
-sudo apt-get update && sudo apt-get install -y containerd.io
-sudo mkdir -p /etc/containerd
+# Add Docker's official GPG key
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+# Add the repository to Apt sources
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+# Install containerd
+sudo apt-get install -y containerd.io
 containerd config default |
   sed -e "s/SystemdCgroup = false/SystemdCgroup = true/g" |
   sed -e "s/registry.k8s.io\/pause:3.6/registry.k8s.io\/pause:3.9/g" |
@@ -63,13 +69,10 @@ sudo systemctl restart containerd
 
 # https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
 echo "[i] install kubeadm"
-sudo apt-get update && sudo apt-get install -y apt-transport-https curl
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-cat <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
-deb https://apt.kubernetes.io/ kubernetes-xenial main
-EOF
-sudo apt-get update
-sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update && sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
 echo "[i] kubeadm init"
@@ -78,7 +81,7 @@ sudo kubeadm init \
   --apiserver-advertise-address $1
 
 mkdir -p $HOME/.kube
-sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 for i in {10..1}; do
@@ -88,7 +91,7 @@ done
 
 c1=$(kubectl get pods -A | grep -c "Running") || true
 c2=$(kubectl get pods -A | grep -c "Pending") || true
-while [ $c1 -ne 4 ] || [ $c2 -ne 2 ]; do
+while [ $c1 -ne 5 ] || [ $c2 -ne 2 ]; do
   sleep 1
   echo "[i] waiting coredns pending"
   c1=$(kubectl get pods -A | grep -c "Running") || true
@@ -96,6 +99,15 @@ while [ $c1 -ne 4 ] || [ $c2 -ne 2 ]; do
 done
 sleep 3
 echo "[+] coredns pending done"
+
+echo "[i] enable hostpath provisioner"
+if [ ! -e "/etc/kubernetes/manifests/kube-controller-manager.yaml" ]; then
+  echo "File does not exist: /etc/kubernetes/manifests/kube-controller-manager.yaml" 1>&2
+  exit 1
+fi
+sudo cat /etc/kubernetes/manifests/kube-controller-manager.yaml |
+  yq -e '.spec.containers[].command += ["--enable-hostpath-provisioner=true"]' |
+  sudo tee /etc/kubernetes/manifests/kube-controller-manager.yaml
 
 # https://github.com/cilium/cilium
 # https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/
@@ -125,15 +137,6 @@ kubectl taint node --all node-role.kubernetes.io/control-plane:NoSchedule-
 echo "[i] node info"
 kubectl get nodes -o wide
 
-echo "[i] enable hostpath provisioner"
-if [ ! -e "/etc/kubernetes/manifests/kube-controller-manager.yaml" ]; then
-  echo "File does not exist: /etc/kubernetes/manifests/kube-controller-manager.yaml" 1>&2
-  exit 1
-fi
-sudo cat /etc/kubernetes/manifests/kube-controller-manager.yaml |
-  yq -e '.spec.containers[].command += ["--enable-hostpath-provisioner=true"]' |
-  sudo tee /etc/kubernetes/manifests/kube-controller-manager.yaml
-
 echo "[i] add storageclass"
 cat <<EOF | kubectl apply -f -
 kind: StorageClass
@@ -147,5 +150,3 @@ EOF
 
 echo "[i] show all pods"
 kubectl get pods --all-namespaces
-
-echo "[+] All Done"
