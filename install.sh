@@ -8,7 +8,8 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
-sudo snap install yq
+sudo snap install yq --channel=v4/stable
+sudo apt-get update && sudo apt-get install -y moreutils
 
 # https://github.com/helm/helm
 echo "[i] install helm"
@@ -135,7 +136,7 @@ if [ ! -e "/etc/kubernetes/manifests/kube-controller-manager.yaml" ]; then
 fi
 sudo cat /etc/kubernetes/manifests/kube-controller-manager.yaml |
   yq -e '.spec.containers[].command += ["--enable-hostpath-provisioner=true"]' |
-  sudo tee /etc/kubernetes/manifests/kube-controller-manager.yaml
+  sudo sponge /etc/kubernetes/manifests/kube-controller-manager.yaml
 
 echo "[i] add storageclass"
 cat <<EOF | kubectl apply -f -
