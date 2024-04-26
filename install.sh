@@ -1,8 +1,8 @@
 #!/bin/bash -eu
 
-cd $(dirname $0)
+cd "$(dirname "$0")"
 
-cmd=$(basename $0)
+cmd=$(basename "$0")
 if [ $# -ne 1 ]; then
   echo "Usage: $cmd address" 1>&2
   exit 1
@@ -78,11 +78,11 @@ sudo apt-mark hold kubelet kubeadm kubectl
 echo "[i] kubeadm init"
 sudo kubeadm init \
   --pod-network-cidr=192.168.0.0/16 \
-  --apiserver-advertise-address $1
+  --apiserver-advertise-address "$1"
 
-mkdir -p $HOME/.kube
-sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
+mkdir -p "$HOME"/.kube
+sudo cp -f /etc/kubernetes/admin.conf "$HOME"/.kube/config
+sudo chown "$(id -u):$(id -g)" "$HOME/.kube/config"
 
 for i in {10..1}; do
   echo "[i] waiting kubeadm init $i"
@@ -91,7 +91,7 @@ done
 
 c1=$(kubectl get pods -A | grep -c "Running") || true
 c2=$(kubectl get pods -A | grep -c "Pending") || true
-while [ $c1 -ne 4 ] || [ $c2 -ne 2 ]; do
+while [ "$c1" -ne 4 ] || [ "$c2" -ne 2 ]; do
   sleep 1
   echo "[i] waiting coredns pending"
   c1=$(kubectl get pods -A | grep -c "Running") || true
@@ -107,7 +107,7 @@ CILIUM_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium/master/
 helm repo add cilium https://helm.cilium.io/
 helm repo update
 helm install cilium cilium/cilium \
-  --version ${CILIUM_VERSION} \
+  --version "${CILIUM_VERSION}" \
   --namespace kube-system \
   --set operator.replicas=1
 
@@ -115,7 +115,7 @@ echo "[i] install cilium cli"
 CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)
 CLI_ARCH=amd64
 if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
-curl -s -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+curl -s -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/"${CILIUM_CLI_VERSION}"/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
 sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
 sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
 rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
