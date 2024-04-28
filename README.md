@@ -1,6 +1,6 @@
 # vagrant-k8s-cilium
 
-A demo to run k8s with cilium on vagrant
+A demo to run k8s with cilium on vagrant (with [cilium L2 Announcements](https://docs.cilium.io/en/latest/network/l2-announcements/))
 
 ## Quick start
 

@@ -3,8 +3,8 @@
 cd "$(dirname "$0")"
 
 cmd=$(basename "$0")
-if [ $# -ne 1 ]; then
-  echo "Usage: $cmd address" 1>&2
+if [ $# -ne 3 ]; then
+  echo "Usage: $cmd address interface ippool" 1>&2
   exit 1
 fi
 
@@ -77,6 +77,7 @@ sudo apt-mark hold kubelet kubeadm kubectl
 
 echo "[i] kubeadm init"
 sudo kubeadm init \
+  --skip-phases=addon/kube-proxy \
   --pod-network-cidr=192.168.0.0/16 \
   --apiserver-advertise-address "$1"
 
@@ -97,20 +98,10 @@ while [ "$c1" -ne 4 ] || [ "$c2" -ne 2 ]; do
   c1=$(kubectl get pods -A | grep -c "Running") || true
   c2=$(kubectl get pods -A | grep -c "Pending") || true
 done
-sleep 3
 echo "[+] coredns pending done"
 
 # https://github.com/cilium/cilium
 # https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/
-echo "[i] install cilium helm"
-CILIUM_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium/master/stable.txt)
-helm repo add cilium https://helm.cilium.io/
-helm repo update
-helm install cilium cilium/cilium \
-  --version "${CILIUM_VERSION}" \
-  --namespace kube-system \
-  --set operator.replicas=1
-
 echo "[i] install cilium cli"
 CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/master/stable.txt)
 CLI_ARCH=amd64
@@ -120,6 +111,27 @@ sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
 sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
 rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
 
+# https://github.com/cilium/cilium/blob/main/install/kubernetes/cilium/values.yaml
+cat <<EOF > /tmp/cilium-values.yaml
+l2announcements:
+  enabled: true
+
+k8sClientRateLimit:
+  qps: 50
+  burst: 100
+
+kubeProxyReplacement: true
+k8sServiceHost: $1
+k8sServicePort: 6443
+
+operator:
+  replicas: 1
+
+hubble:
+  enabled: false
+EOF
+
+cilium install --helm-values /tmp/cilium-values.yaml
 cilium status --wait
 
 echo "[i] taint node"
@@ -151,4 +163,27 @@ EOF
 echo "[i] show all pods"
 kubectl get pods --all-namespaces
 
-echo "[+] All Done"
+# https://blog.stonegarden.dev/articles/2023/12/migrating-from-metallb-to-cilium/
+cat <<EOF | kubectl apply -f -
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: default-l2-announcement-policy
+spec:
+  interfaces:
+    - $2
+  externalIPs: true
+  loadBalancerIPs: true
+EOF
+
+cat <<EOF | kubectl apply -f -
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: default-loadbalancer-ip-pool
+spec:
+  cidrs:
+    - cidr: $3
+EOF
+
+echo "[+] all done"
