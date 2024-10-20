@@ -1,7 +1,7 @@
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/jammy64"
 
-  config.vm.network "private_network", ip: "192.168.56.10"
+  config.vm.network "public_network", bridge: "eth0", netmask: "16", ip: "10.1.10.7"
 
   config.vm.synced_folder ".", "/vagrant", SharedFoldersEnableSymlinksCreate: false
 
@@ -14,7 +14,8 @@ Vagrant.configure("2") do |config|
     config.vbguest.auto_update = false
   end
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
-    bash -eu /vagrant/install.sh 192.168.56.10 enp0s8 192.168.56.97 192.168.56.110
+    bash -eu /vagrant/install.sh 10.1.10.7 enp0s8 10.1.13.1 10.1.13.254
     cilium connectivity test
+    bash -eu /vagrant/test.sh
   SHELL
 end
