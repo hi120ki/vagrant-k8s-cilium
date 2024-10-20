@@ -14,7 +14,7 @@ Vagrant.configure("2") do |config|
     config.vbguest.auto_update = false
   end
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
-    bash -eu /vagrant/install.sh 192.168.56.10 enp0s8 192.168.56.96/28
+    bash -eu /vagrant/install.sh 192.168.56.10 enp0s8 192.168.56.97 192.168.56.110
     cilium connectivity test
   SHELL
 end

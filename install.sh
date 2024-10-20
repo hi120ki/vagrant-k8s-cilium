@@ -3,8 +3,8 @@
 cd "$(dirname "$0")"
 
 cmd=$(basename "$0")
-if [ $# -ne 3 ]; then
-  echo "Usage: $cmd address interface ippool" 1>&2
+if [ $# -ne 4 ]; then
+  echo "Usage: $cmd address interface ipstart ipstop" 1>&2
   exit 1
 fi
 
@@ -13,7 +13,7 @@ sudo apt-get update && sudo apt-get install -y moreutils
 
 # https://github.com/helm/helm
 echo "[i] install helm"
-curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 chmod 700 /tmp/get_helm.sh
 /tmp/get_helm.sh
 
@@ -69,8 +69,8 @@ sudo systemctl restart containerd
 echo "[i] install kubeadm"
 sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 sudo mkdir -p -m 755 /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
@@ -182,8 +182,9 @@ kind: CiliumLoadBalancerIPPool
 metadata:
   name: default-loadbalancer-ip-pool
 spec:
-  cidrs:
-    - cidr: $3
+  blocks:
+    - start: $3
+      stop: $4
 EOF
 
 echo "[+] all done"
