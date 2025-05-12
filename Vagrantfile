@@ -9,6 +9,7 @@ Vagrant.configure("2") do |config|
     vb.cpus = 4
     vb.memory = 4096
     vb.gui = false
+    vb.customize ["modifyvm", :id, "--ioapic", "on"]
     vb.customize ["modifyvm", :id, "--graphicscontroller", "vmsvga"]
   end
 
