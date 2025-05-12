@@ -29,7 +29,7 @@ fi
 # https://kubernetes.io/docs/setup/production-environment/container-runtimes/#install-and-configure-prerequisites
 echo "[i] network config"
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.ipv4.ip_forward                 = 1
+net.ipv4.ip_forward = 1
 EOF
 sudo sysctl --system
 sysctl net.ipv4.ip_forward
