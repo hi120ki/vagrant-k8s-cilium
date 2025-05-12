@@ -67,6 +67,7 @@ sudo systemctl enable --now kubelet
 echo "[i] kubeadm init"
 sudo kubeadm init \
   --skip-phases=addon/kube-proxy \
+  --ignore-preflight-errors=NumCPU \
   --pod-network-cidr=192.168.0.0/16 \
   --apiserver-advertise-address "$1"
 
