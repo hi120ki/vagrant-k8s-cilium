@@ -8,8 +8,7 @@ if [ $# -ne 4 ]; then
   exit 1
 fi
 
-sudo snap install yq --channel=v4/stable
-sudo apt-get update && sudo apt-get install -y moreutils
+sudo apt-get update && sudo apt-get install -y yq moreutils
 
 # https://github.com/helm/helm
 echo "[i] install helm"

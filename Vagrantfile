@@ -1,5 +1,5 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/jammy64"
+  config.vm.box = "cloud-image/ubuntu-24.04"
 
   config.vm.network "public_network", bridge: "eth0", netmask: "16", ip: "10.1.10.7"
 
@@ -8,6 +8,8 @@ Vagrant.configure("2") do |config|
   config.vm.provider "virtualbox" do |vb|
     vb.cpus = 4
     vb.memory = 4096
+    vb.gui = false
+    vb.customize ["modifyvm", :id, "--graphicscontroller", "vmsvga"]
   end
 
   if Vagrant.has_plugin?("vagrant-vbguest")
